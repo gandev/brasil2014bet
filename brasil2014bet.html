@@ -1,0 +1,75 @@
+<head>
+  <title>brasil2014bet</title>
+</head>
+
+<body>
+  <div class="container-fluid">
+    <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+      <!-- We use the fluid option here to avoid overriding the fixed width of a normal container within the narrow content columns. -->
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#">WM 2014 Tippspiel</a>
+        </div>
+
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#">Tipps</a></li>
+            <li><a href="#">Ranking</a></li>
+            <li><a href="#">{{> loginButtons}}</a></li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div>
+    </nav>
+    <br>
+    <div class="container-fluid">
+      {{#each matchTypes}}
+        <h4>{{this}}</h4>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width: 15%;">Team 1</th>
+              <th style="width: 15%;">Team 2</th>
+              <th style="width: 20%;">Start</th>
+              <th style="width: 10%;">Ergebnis</th>
+              <th style="width: 40%;">Tipp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each matchesByType}}
+              <tr>
+                <td>{{team1}}</td>
+                <td>{{team2}}</td>
+                <td>{{start}}</td>
+                <td>{{#if result}}{{result}}{{else}}n/a{{/if}}</td>
+                <td>{{> myBet}}</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      {{/each}}
+    </div>
+  </div>
+</body>
+
+<template name="myBet">
+  {{#unless currentBet}}
+  <div>
+    <input type="text" class="bet-team1" style="width: 20%;"/>
+    <strong>:</strong>
+    <input type="text" class="bet-team2" style="width: 20%;">
+    <button type="button" class="btn apply-bet">
+      <span class="glyphicon glyphicon-ok"></span>
+    </button>
+  </div>
+  {{else}}
+    {{#with currentBet}}
+      <div>
+        {{team1}}<strong>:</strong>{{team2}}
+        <button type="button" class="btn remove-bet">
+          <span class="glyphicon glyphicon-remove"></span>
+        </button>
+      </div>
+    {{/with}}
+  {{/unless}}
+</template>
