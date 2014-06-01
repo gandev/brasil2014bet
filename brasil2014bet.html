@@ -5,7 +5,6 @@
 <body>
   <div class="container-fluid">
     <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
-      <!-- We use the fluid option here to avoid overriding the fixed width of a normal container within the narrow content columns. -->
       <div class="container-fluid">
         <div class="navbar-header">
           <a class="navbar-brand" href="#">WM 2014 Tippspiel</a>
@@ -20,7 +19,7 @@
         </div><!-- /.navbar-collapse -->
       </div>
     </nav>
-    <br>
+    <br><br><br>
     <div class="container-fluid">
       {{#each matchTypes}}
         <h4>{{this}}</h4>
@@ -32,18 +31,31 @@
               <th style="width: 15%;">Team 2</th>
               <th style="width: 20%;">Start</th>
               <th style="width: 10%;">Ergebnis</th>
-              <th style="width: 40%;">Tipp</th>
+              <th style="width: 40%;">Mein Tipp</th>
             </tr>
           </thead>
           <tbody>
             {{#each matchesByType}}
-              <tr>
-                <td>{{team1}}</td>
-                <td>{{team2}}</td>
-                <td>{{start}}</td>
-                <td>{{#if result}}{{result}}{{else}}n/a{{/if}}</td>
-                <td>{{> myBet}}</td>
-              </tr>
+              {{#if isFixed}}
+                <tr>
+                  <td>{{team1}}</td>
+                  <td>{{team2}}</td>
+                  <td>{{start}}<br>{{startOfGame}}</td>
+                  <td>{{#if result}}{{result}}{{else}}n/a{{/if}}
+                    {{#if isFinals}}
+                      {{#if result_overtime}}
+                        <br>
+                        n.V. {{result_overtime}}
+                      {{/if}}
+                      {{#if result_eleven}}
+                        <br>
+                        n.E. {{result_eleven}}
+                      {{/if}}
+                    {{/if}}
+                  </td>
+                  <td>{{> myBet}}</td>
+                </tr>
+              {{/if}}
             {{/each}}
           </tbody>
         </table>
@@ -54,22 +66,72 @@
 
 <template name="myBet">
   {{#unless currentBet}}
-  <div>
-    <input type="text" class="bet-team1" style="width: 20%;"/>
-    <strong>:</strong>
-    <input type="text" class="bet-team2" style="width: 20%;">
-    <button type="button" class="btn apply-bet">
-      <span class="glyphicon glyphicon-ok"></span>
-    </button>
-  </div>
+    {{#unless timeIsUp}}
+      <button class="btn btn-primary" data-toggle="modal" data-target="#{{_id}}">Tipp abgeben</button>
+    {{else}}
+      <h4>Zeit abgelaufen!</h4>
+    {{/unless}}
   {{else}}
     {{#with currentBet}}
       <div>
-        {{team1}}<strong>:</strong>{{team2}}
-        <button type="button" class="btn remove-bet">
-          <span class="glyphicon glyphicon-remove"></span>
-        </button>
+        {{result}}
+        {{#if ../isFinals}}
+          {{#if result_overtime}}
+            <br>
+            n.V. {{result_overtime}}
+          {{/if}}
+          {{#if result_eleven}}
+            <br>
+            n.E. {{result_eleven}}
+          {{/if}}
+        {{/if}}
+
+        {{#unless timeIsUp ..}}
+          <button type="button" class="btn remove-bet">
+            <span class="glyphicon glyphicon-remove"></span>
+          </button>
+        {{else}}
+          <h4>{{myPoints ..}}</h4>
+        {{/unless}}
       </div>
     {{/with}}
   {{/unless}}
+
+  <div class="modal fade" id="{{_id}}" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+          <h4 class="modal-title" id="mySmallModalLabel">Tipp abgeben</h4>
+        </div>
+
+        <div class="modal-body">
+          <h4>Reguläre Spielzeit:</h4>
+          <input type="text" class="bet-team1" style="width: 20%;"/>
+          <strong>:</strong>
+          <input type="text" class="bet-team2" style="width: 20%;">
+
+          <br>
+
+          {{#if isFinals}}
+            <h4>Nach Verlängerung:</h4>
+            <input type="text" class="bet-team1-overtime" style="width: 20%;"/>
+            <strong>:</strong>
+            <input type="text" class="bet-team2-overtime" style="width: 20%;">
+
+            <br>
+
+            <h4>Nach Elfmeterschießen:</h4>
+            <input type="text" class="bet-team1-eleven" style="width: 20%;"/>
+            <strong>:</strong>
+            <input type="text" class="bet-team2-eleven" style="width: 20%;">
+          {{/if}}
+
+          <button type="button" class="btn apply-bet">
+            <span class="glyphicon glyphicon-ok"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>

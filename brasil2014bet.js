@@ -1,25 +1,92 @@
+/*
+
+ TEST QUERIES:
+
+ Matches.update("6sJ4EkzcySWZgLnST", {'$set': {result: ""}})
+ Matches.update("6sJ4EkzcySWZgLnST", {'$set': {start: "15.06.2014	18:00"}})
+
+*/
+
 Matches = new Meteor.Collection('matches');
 Bets = new Meteor.Collection('bets');
 
 if (Meteor.isClient) {
   UI.body.helpers({
-    matchTypes: function () {
-      var matches = Matches.find().fetch();
-      var matchTypes = [];
-      _.each(matches, function (match) {
-        matchTypes.push(match.type);
-      });
-      return _.uniq(matchTypes);
-    },
+    matchTypes: ['Gruppe A',
+                 'Gruppe B',
+                 'Gruppe C',
+                 'Gruppe D',
+                 'Gruppe E',
+                 'Gruppe F',
+                 'Gruppe G',
+                 'Gruppe H',
+                 'Achtelfinale',
+                 'Viertelfinale',
+                 'Halbfinale',
+                 'Spiel um Platz 3',
+                 'Finale'],
     matchesByType: function () {
       return Matches.find({type: this.toString()});
+    },
+    startOfGame: function () {
+      var m = moment(this.start, 'DD.MM.YYYY  HH:mm');
+      return  '(' + m.fromNow() + ')';
     }
   });
+
+  var calculatePoints = function(result, bet) {
+    if(result == bet) {
+      return 3;
+    }
+
+    var result_split = result.split(':');
+    var result_t1 = parseInt(result_split[0], 10);
+    var result_t2 = parseInt(result_split[1], 10);
+
+    var bet_result_split = bet.split(':');
+    var bet_result_t1 = parseInt(bet_result_split[0], 10);
+    var bet_result_t2 = parseInt(bet_result_split[1], 10);
+
+    if(result_t1 > result_t2 && bet_result_t1 > bet_result_t2 ||
+       result_t1 < result_t2 && bet_result_t1 < bet_result_t2 ||
+       result_t1 === result_t2 && bet_result_t1 === bet_result_t2) {
+      return 1;
+    } else {
+      return 0;
+    }
+  };
 
   Template.myBet.helpers({
     currentBet: function () {
       var bet = Bets.findOne({match: this._id});
       return bet;
+    },
+    timeIsUp: function (match) {
+      match = match || this;
+
+      //TODO in Server berechnen + im Intervall checken
+
+      var m = moment(match.start, 'DD.MM.YYYY  HH:mm');
+      return !moment().isBefore(m);
+    },
+    myPoints: function (match) {
+      var myBet = this;
+      var points;
+
+      if(match.result && myBet.result) {
+        points = 0;
+        points += calculatePoints(match.result, myBet.result);
+      }
+
+      if(match.result_overtime && myBet.result_overtime && points !== undefined) {
+        points += calculatePoints(match.result_overtime, myBet.result_overtime);
+      }
+
+      if(match.result_eleven && myBet.result_eleven && points !== undefined) {
+        points += calculatePoints(match.result_eleven, myBet.result_eleven);
+      }
+
+      return '[' + (points === undefined ? 'Ergebnis fehlt!': '' + points) + ']';
     }
   });
 
@@ -27,7 +94,18 @@ if (Meteor.isClient) {
     'click .apply-bet': function (evt, tmpl) {
       var b1 = tmpl.$('.bet-team1').val();
       var b2 = tmpl.$('.bet-team2').val();
-      Bets.insert({match: this._id, team1: b1, team2: b2});
+
+      var b1_overtime = tmpl.$('.bet-team1-overtime').val();
+      var b2_overtime = tmpl.$('.bet-team2-overtime').val();
+
+      var b1_eleven = tmpl.$('.bet-team1-eleven').val();
+      var b2_eleven = tmpl.$('.bet-team2-eleven').val();
+
+      Bets.insert({match: this._id,
+        result: b1 + ':' + b2,
+        result_overtime: (b1_overtime && b2_overtime && b1 === b2 ? b1_overtime + ':' + b2_overtime: null),
+        result_eleven: (b1_eleven && b2_eleven && b1_overtime === b2_overtime ? b1_eleven + ':' + b2_eleven: null)
+      });
     },
     'click .remove-bet': function (evt, tmpl) {
       Bets.remove(this._id);
@@ -46,7 +124,8 @@ if (Meteor.isServer) {
         start: '12.06.2014	22:00',
         team1: 'Brasilien',
         team2: 'Kroatien',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -54,7 +133,8 @@ if (Meteor.isServer) {
         start: '13.06.2014	18:00',
         team1: 'Mexico',
         team2: 'Kamerun',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -62,7 +142,8 @@ if (Meteor.isServer) {
         start: '17.06.2014	21:00',
         team1: 'Brasilien',
         team2: 'Mexico',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -70,7 +151,8 @@ if (Meteor.isServer) {
         start: '19.06.2014	00:00',
         team1: 'Kamerun',
         team2: 'Kroatien',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -78,7 +160,8 @@ if (Meteor.isServer) {
         start: '23.06.2014	22:00',
         team1: 'Kamerun',
         team2: 'Brasilien',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -86,7 +169,8 @@ if (Meteor.isServer) {
         start: '23.06.2014	22:00',
         team1: 'Kroation',
         team2: 'Mexiko',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       //GRUPPE B
@@ -95,7 +179,8 @@ if (Meteor.isServer) {
         start: '13.06.2014	21:00',
         team1: 'Spanien',
         team2: 'Niederlande',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -103,7 +188,8 @@ if (Meteor.isServer) {
         start: '14.06.2014	00:00',
         team1: 'Chile',
         team2: 'Australien',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -111,7 +197,8 @@ if (Meteor.isServer) {
         start: '18.06.2014	18:00',
         team1: 'Australien',
         team2: 'Niederlande',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -119,7 +206,8 @@ if (Meteor.isServer) {
         start: '18.06.2014	21:00',
         team1: 'Spanien',
         team2: 'Chile',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -127,7 +215,8 @@ if (Meteor.isServer) {
         start: '23.06.2014	18:00',
         team1: 'Australien',
         team2: 'Spanien',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -135,7 +224,8 @@ if (Meteor.isServer) {
         start: '23.06.2014	18:00',
         team1: 'Niederlande',
         team2: 'Chile',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       //GRUPPE C
@@ -144,7 +234,8 @@ if (Meteor.isServer) {
         start: '14.06.2014	18:00',
         team1: 'Kolumbien',
         team2: 'Griechenland',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -152,7 +243,8 @@ if (Meteor.isServer) {
         start: '15.06.2014	03:00',
         team1: 'Elfenbeinküste',
         team2: 'Japan',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -160,7 +252,8 @@ if (Meteor.isServer) {
         start: '19.06.2014	18:00',
         team1: 'Kolumbien',
         team2: 'Elfenbeinküste',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -168,7 +261,8 @@ if (Meteor.isServer) {
         start: '20.06.2014	00:00',
         team1: 'Japan',
         team2: 'Griechenland',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -176,7 +270,8 @@ if (Meteor.isServer) {
         start: '24.06.2014	22:00',
         team1: 'Japan',
         team2: 'Kolumbien',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -184,7 +279,8 @@ if (Meteor.isServer) {
         start: '24.06.2014	22:00',
         team1: 'Griechenland',
         team2: 'Elfenbeinküste',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       //GRUPPE D
@@ -193,7 +289,8 @@ if (Meteor.isServer) {
         start: '14.06.2014	21:00',
         team1: 'Uruguay',
         team2: 'Costa Rica',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -201,7 +298,8 @@ if (Meteor.isServer) {
         start: '15.06.2014	00:00',
         team1: 'England',
         team2: 'Italien',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -209,7 +307,8 @@ if (Meteor.isServer) {
         start: '19.06.2014	21:00',
         team1: 'Uruguay',
         team2: 'England',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -217,7 +316,8 @@ if (Meteor.isServer) {
         start: '20.06.2014	18:00',
         team1: 'Italien',
         team2: 'Costa Rica',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -225,7 +325,8 @@ if (Meteor.isServer) {
         start: '24.06.2014	18:00',
         team1: 'Costa Rica',
         team2: 'England',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -233,7 +334,8 @@ if (Meteor.isServer) {
         start: '24.06.2014	18:00',
         team1: 'Italien',
         team2: 'Uruguay',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       //GRUPPE E
@@ -242,7 +344,8 @@ if (Meteor.isServer) {
         start: '15.06.2014	18:00',
         team1: 'Schweiz',
         team2: 'Ecuador',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -250,7 +353,8 @@ if (Meteor.isServer) {
         start: '15.06.2014	21:00',
         team1: 'Frankreich',
         team2: 'Honduras',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -258,7 +362,8 @@ if (Meteor.isServer) {
         start: '20.06.2014	21:00',
         team1: 'Schweiz',
         team2: 'Frankreich',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -266,7 +371,8 @@ if (Meteor.isServer) {
         start: '21.06.2014	00:00',
         team1: 'Honduras',
         team2: 'Ecuador',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -274,7 +380,8 @@ if (Meteor.isServer) {
         start: '25.06.2014	22:00',
         team1: 'Honduras',
         team2: 'Schweiz',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -282,7 +389,8 @@ if (Meteor.isServer) {
         start: '25.06.2014	22:00',
         team1: 'Ecuador',
         team2: 'Frankreich',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       //GRUPPE F
@@ -291,7 +399,8 @@ if (Meteor.isServer) {
         start: '16.06.2014	00:00',
         team1: 'Argentinien',
         team2: 'Bosnien-Herzegowina',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -299,7 +408,8 @@ if (Meteor.isServer) {
         start: '16.06.2014	21:00',
         team1: 'Iran',
         team2: 'Nigeria',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -307,7 +417,8 @@ if (Meteor.isServer) {
         start: '21.06.2014	18:00',
         team1: 'Argentinien',
         team2: 'Iran',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -315,7 +426,8 @@ if (Meteor.isServer) {
         start: '22.06.2014	00:00',
         team1: 'Nigeria',
         team2: 'Bosnien-Herzegowina',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -323,7 +435,8 @@ if (Meteor.isServer) {
         start: '25.06.2014	18:00',
         team1: 'Nigeria',
         team2: 'Argentinien',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -331,7 +444,8 @@ if (Meteor.isServer) {
         start: '25.06.2014	18:00',
         team1: 'Bosnien-Herzegowina',
         team2: 'Iran',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       //GRUPPE G
@@ -340,7 +454,8 @@ if (Meteor.isServer) {
         start: '16.06.2014	18:00',
         team1: 'Deutschland',
         team2: 'Portugal',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -348,7 +463,8 @@ if (Meteor.isServer) {
         start: '17.06.2014	00:00',
         team1: 'Ghana',
         team2: 'USA',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -356,7 +472,8 @@ if (Meteor.isServer) {
         start: '21.06.2014	21:00',
         team1: 'Deutschland',
         team2: 'Ghana',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -364,7 +481,8 @@ if (Meteor.isServer) {
         start: '23.06.2014	00:00',
         team1: 'USA',
         team2: 'Portugal',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -372,7 +490,8 @@ if (Meteor.isServer) {
         start: '26.06.2014	18:00',
         team1: 'Portugal',
         team2: 'Ghana',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -380,7 +499,8 @@ if (Meteor.isServer) {
         start: '26.06.2014	18:00',
         team1: 'USA',
         team2: 'Deutschland',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       //GRUPPE H
@@ -389,7 +509,8 @@ if (Meteor.isServer) {
         start: '17.06.2014	18:00',
         team1: 'Belgien',
         team2: 'Algerien',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -397,7 +518,8 @@ if (Meteor.isServer) {
         start: '18.06.2014	00:00',
         team1: 'Russland',
         team2: 'Südkorea',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -405,7 +527,8 @@ if (Meteor.isServer) {
         start: '22.06.2014	18:00',
         team1: 'Belgien',
         team2: 'Russland',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -413,7 +536,8 @@ if (Meteor.isServer) {
         start: '22.06.2014	21:00',
         team1: 'Südkorea',
         team2: 'Algerien',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       Matches.insert({
@@ -429,7 +553,8 @@ if (Meteor.isServer) {
         start: '26.06.2014	22:00',
         team1: 'Südkorea',
         team2: 'Belgien',
-        result: null
+        result: null,
+        isFixed: true
       });
 
       //Achtelfinale
@@ -438,7 +563,11 @@ if (Meteor.isServer) {
         start: '28.06.2014	18:00',
         team1: 'Sieger Gruppe A',
         team2: 'Zweiter Gruppe B',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       Matches.insert({
@@ -446,7 +575,11 @@ if (Meteor.isServer) {
         start: '28.06.2014	22:00',
         team1: 'Sieger Gruppe C',
         team2: 'Zweiter Gruppe D',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       Matches.insert({
@@ -454,7 +587,11 @@ if (Meteor.isServer) {
         start: '29.06.2014	18:00',
         team1: 'Sieger Gruppe B',
         team2: 'Zweiter Gruppe A',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       Matches.insert({
@@ -462,7 +599,11 @@ if (Meteor.isServer) {
         start: '29.06.2014	22:00',
         team1: 'Sieger Gruppe D',
         team2: 'Zweiter Gruppe C',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       Matches.insert({
@@ -470,7 +611,11 @@ if (Meteor.isServer) {
         start: '30.06.2014	18:00',
         team1: 'Sieger Gruppe E',
         team2: 'Zweiter Gruppe F',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       Matches.insert({
@@ -478,7 +623,11 @@ if (Meteor.isServer) {
         start: '30.06.2014	22:00',
         team1: 'Sieger Gruppe G',
         team2: 'Zweiter Gruppe H',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       Matches.insert({
@@ -486,7 +635,11 @@ if (Meteor.isServer) {
         start: '01.07.2014	18:00',
         team1: 'Sieger Gruppe F',
         team2: 'Zweiter Gruppe E',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       Matches.insert({
@@ -494,7 +647,11 @@ if (Meteor.isServer) {
         start: '01.07.2014	22:00',
         team1: 'Sieger Gruppe H',
         team2: 'Zweiter Gruppe G',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       //Viertelfinale
@@ -503,7 +660,11 @@ if (Meteor.isServer) {
         start: '04.07.2014	18:00',
         team1: 'Sieger AF 5',
         team2: 'Sieger AF 6',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       Matches.insert({
@@ -511,7 +672,11 @@ if (Meteor.isServer) {
         start: '04.07.2014	22:00',
         team1: 'Sieger AF 1',
         team2: 'Sieger AF 2',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       Matches.insert({
@@ -519,7 +684,11 @@ if (Meteor.isServer) {
         start: '05.07.2014	18:00',
         team1: 'Sieger AF 7',
         team2: 'Sieger AF 8',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       Matches.insert({
@@ -527,7 +696,11 @@ if (Meteor.isServer) {
         start: '05.07.2014	22:00',
         team1: 'Sieger AF 3',
         team2: 'Sieger AF 4',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       //Halbfinale
@@ -536,7 +709,11 @@ if (Meteor.isServer) {
         start: '08.07.2014	22:00',
         team1: 'Sieger VF 1',
         team2: 'Sieger VF 2',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       Matches.insert({
@@ -544,7 +721,11 @@ if (Meteor.isServer) {
         start: '09.07.2014	22:00',
         team1: 'Sieger VF 4',
         team2: 'Sieger VF 3',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       Matches.insert({
@@ -552,7 +733,11 @@ if (Meteor.isServer) {
         start: '12.07.2014	22:00',
         team1: 'Verlierer HF 1',
         team2: 'Verlierer HF 2',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
 
       Matches.insert({
@@ -560,7 +745,11 @@ if (Meteor.isServer) {
         start: '13.07.2014	21:00',
         team1: 'Sieger HF 1',
         team2: 'Sieger HF 2',
-        result: null
+        result: null,
+        result_overtime: null,
+        result_eleven: null,
+        isFixed: false,
+        isFinals: true
       });
     }
   });
