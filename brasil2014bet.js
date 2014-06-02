@@ -2,8 +2,8 @@
 
  TEST QUERIES:
 
- Matches.update("6sJ4EkzcySWZgLnST", {'$set': {result: ""}})
- Matches.update("6sJ4EkzcySWZgLnST", {'$set': {start: "15.06.2014	18:00"}})
+ Matches.update(Matches.findOne({type: 'Gruppe A'})._id, {'$set': {result: ""}})
+ Matches.update(Matches.findOne({type: 'Gruppe A'})._id, {'$set': {start: "15.05.2014	18:00"}})
 
 */
 
@@ -64,10 +64,11 @@ if (Meteor.isClient) {
     timeIsUp: function (match) {
       match = match || this;
 
-      //TODO in Server berechnen + im Intervall checken
+      Meteor.call('timeIsUp', match, function (err, result) {
+        Session.set('timeIsUp_' + match._id, result);
+      });
 
-      var m = moment(match.start, 'DD.MM.YYYY  HH:mm');
-      return !moment().isBefore(m);
+      return Session.get('timeIsUp_' + match._id);
     },
     myPoints: function (match) {
       var myBet = this;
@@ -101,10 +102,8 @@ if (Meteor.isClient) {
       var b1_eleven = tmpl.$('.bet-team1-eleven').val();
       var b2_eleven = tmpl.$('.bet-team2-eleven').val();
 
-      Bets.insert({match: this._id,
-        result: b1 + ':' + b2,
-        result_overtime: (b1_overtime && b2_overtime && b1 === b2 ? b1_overtime + ':' + b2_overtime: null),
-        result_eleven: (b1_eleven && b2_eleven && b1_overtime === b2_overtime ? b1_eleven + ':' + b2_eleven: null)
+      Meteor.call('applyBet', this, b1, b2, b1_overtime, b2_overtime, b1_eleven, b2_eleven, function (err, result) {
+        console.log(err.reason, result);
       });
     },
     'click .remove-bet': function (evt, tmpl) {
@@ -114,6 +113,29 @@ if (Meteor.isClient) {
 }
 
 if (Meteor.isServer) {
+  var timeIsUp = function (match_time) {
+    var m = moment(match_time, 'DD.MM.YYYY  HH:mm');
+    return !moment().isBefore(m);
+  };
+
+  Meteor.methods({
+      timeIsUp: function (match) {
+        return timeIsUp(match.start);
+      },
+      applyBet: function (match, b1, b2, b1_overtime, b2_overtime, b1_eleven, b2_eleven) {
+        if(!timeIsUp(match.start)) {
+          Bets.insert({match: match._id,
+            result: b1 + ':' + b2,
+            result_overtime: (b1_overtime && b2_overtime && b1 === b2 ? b1_overtime + ':' + b2_overtime: null),
+            result_eleven: (b1_eleven && b2_eleven && b1_overtime === b2_overtime ? b1_eleven + ':' + b2_eleven: null)
+          });
+          return true;
+        } else {
+          throw new Meteor.Error(999, 'NO! Time is up!');
+        }
+      }
+  });
+
   Meteor.startup(function () {
 
     if(Matches.find().count() === 0) {
