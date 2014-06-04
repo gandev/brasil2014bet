@@ -31,7 +31,9 @@
               <th style="width: 15%;">Team 2</th>
               <th style="width: 20%;">Start</th>
               <th style="width: 10%;">Ergebnis</th>
-              <th style="width: 40%;">Mein Tipp</th>
+              {{#if currentUser}}
+                <th style="width: 40%;">Mein Tipp</th>
+              {{/if}}
             </tr>
           </thead>
           <tbody>
@@ -53,7 +55,9 @@
                       {{/if}}
                     {{/if}}
                   </td>
-                  <td>{{> myBet}}</td>
+                  {{#if currentUser}}
+                    <td>{{> myBet}}</td>
+                  {{/if}}
                 </tr>
               {{/if}}
             {{/each}}

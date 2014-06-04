@@ -2,7 +2,10 @@
 
  TEST QUERIES:
 
- Matches.update(Matches.findOne({type: 'Gruppe A'})._id, {'$set': {result: ""}})
+ Accounts.createUser({username: 'test', password: 'test123'});
+ Meteor.loginWithPassword('test', 'test123');
+
+ Matches.update(Matches.findOne({type: 'Gruppe A'})._id, {'$set': {result: "1:2"}})
  Matches.update(Matches.findOne({type: 'Gruppe A'})._id, {'$set': {start: "15.05.2014	18:00"}})
 
 */
@@ -11,6 +14,9 @@ Matches = new Meteor.Collection('matches');
 Bets = new Meteor.Collection('bets');
 
 if (Meteor.isClient) {
+  Meteor.subscribe('allMatches');
+  Meteor.subscribe('myBets');
+
   UI.body.helpers({
     matchTypes: ['Gruppe A',
                  'Gruppe B',
@@ -103,7 +109,7 @@ if (Meteor.isClient) {
       var b2_eleven = tmpl.$('.bet-team2-eleven').val();
 
       Meteor.call('applyBet', this, b1, b2, b1_overtime, b2_overtime, b1_eleven, b2_eleven, function (err, result) {
-        console.log(err.reason, result);
+        console.log(err, result);
       });
     },
     'click .remove-bet': function (evt, tmpl) {
@@ -113,6 +119,15 @@ if (Meteor.isClient) {
 }
 
 if (Meteor.isServer) {
+  Meteor.publish('myBets', function () {
+    return Bets.find({user: this.userId});
+  });
+
+  Meteor.publish('allMatches', function () {
+    //TODO maybe just only fixed ones
+    return Matches.find();
+  });
+
   var timeIsUp = function (match_time) {
     var m = moment(match_time, 'DD.MM.YYYY  HH:mm');
     return !moment().isBefore(m);
@@ -123,8 +138,9 @@ if (Meteor.isServer) {
         return timeIsUp(match.start);
       },
       applyBet: function (match, b1, b2, b1_overtime, b2_overtime, b1_eleven, b2_eleven) {
-        if(!timeIsUp(match.start)) {
-          Bets.insert({match: match._id,
+        if(this.userId && !timeIsUp(match.start)) {
+          Bets.upsert({match: match._id, user: this.userId}, {match: match._id,
+            user: this.userId,
             result: b1 + ':' + b2,
             result_overtime: (b1_overtime && b2_overtime && b1 === b2 ? b1_overtime + ':' + b2_overtime: null),
             result_eleven: (b1_eleven && b2_eleven && b1_overtime === b2_overtime ? b1_eleven + ':' + b2_eleven: null)
