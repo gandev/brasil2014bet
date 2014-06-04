@@ -124,8 +124,13 @@ if (Meteor.isServer) {
   });
 
   Meteor.publish('allMatches', function () {
-    //TODO maybe just only fixed ones
     return Matches.find();
+  });
+
+  Bets.allow({
+    remove: function (userId, doc) {
+      return doc.user === userId;
+    }
   });
 
   var timeIsUp = function (match_time) {
