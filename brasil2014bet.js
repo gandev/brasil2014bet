@@ -40,6 +40,15 @@ if (Meteor.isClient) {
     }
   });
 
+  UI.body.events({
+    'click #loginUser': function (evt, tmpl) {
+      var username = tmpl.$('#username').val();
+      var password = tmpl.$('#password').val();
+
+      Meteor.loginWithPassword(username, password);
+    }
+  });
+
   var calculatePoints = function(result, bet) {
     if(result == bet) {
       return 3;

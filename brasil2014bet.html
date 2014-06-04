@@ -14,7 +14,17 @@
           <ul class="nav navbar-nav">
             <li class="active"><a href="#">Tipps</a></li>
             <li><a href="#">Ranking</a></li>
-            <li><a href="#">{{> loginButtons}}</a></li>
+            <li><a href="#">
+              {{#if currentUser}}
+                {{> loginButtons}}
+              {{else}}
+                <label>Benutzer:</label>
+                <input type="text" id="username"/>
+                <label>Passwort:</label>
+                <input type="text" id="password"/>
+                <button class="btn" id="loginUser">Login</button>
+              {{/if}}
+            </a></li>
           </ul>
         </div><!-- /.navbar-collapse -->
       </div>
