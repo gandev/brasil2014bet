@@ -12,8 +12,8 @@
 
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
-            <li class="active"><a href="#">Tipps</a></li>
-            <li><a href="#">Ranking</a></li>
+            <li class="{{#unless rankingSiteActive}}active{{/unless}}"><a id="betSiteNav">Tipps</a></li>
+            <li class="{{rankingSiteActive}}"><a id="rankingSiteNav">Ranking</a></li>
             <li><a href="#">
               {{#if currentUser}}
                 {{> loginButtons}}
@@ -22,7 +22,7 @@
                 <input type="text" id="username"/>
                 <label>Passwort:</label>
                 <input type="text" id="password"/>
-                <button class="btn" id="loginUser">Login</button>
+                <button class="btn btn-sm" id="loginUser">Login</button>
               {{/if}}
             </a></li>
           </ul>
@@ -31,49 +31,57 @@
     </nav>
     <br><br><br>
     <div class="container-fluid">
-      {{#each matchTypes}}
-        <h4>{{this}}</h4>
+      {{#unless rankingSiteActive}}
+        {{#each matchTypes}}
+          <h4>{{this}}</h4>
 
-        <table class="table">
-          <thead>
-            <tr>
-              <th style="width: 15%;">Team 1</th>
-              <th style="width: 15%;">Team 2</th>
-              <th style="width: 20%;">Start</th>
-              <th style="width: 10%;">Ergebnis</th>
-              {{#if currentUser}}
-                <th style="width: 40%;">Mein Tipp</th>
-              {{/if}}
-            </tr>
-          </thead>
-          <tbody>
-            {{#each matchesByType}}
-              {{#if isFixed}}
-                <tr>
-                  <td>{{team1}}</td>
-                  <td>{{team2}}</td>
-                  <td>{{start}}<br>{{startOfGame}}</td>
-                  <td>{{#if result}}{{result}}{{else}}n/a{{/if}}
-                    {{#if isFinals}}
-                      {{#if result_overtime}}
-                        <br>
-                        n.V. {{result_overtime}}
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width: 15%;">Team 1</th>
+                <th style="width: 15%;">Team 2</th>
+                <th style="width: 20%;">Start</th>
+                <th style="width: 10%;">Ergebnis</th>
+                {{#if currentUser}}
+                  <th style="width: 40%;">Mein Tipp</th>
+                {{/if}}
+              </tr>
+            </thead>
+            <tbody>
+              {{#each matchesByType}}
+                {{#if isFixed}}
+                  <tr>
+                    <td>{{team1}}</td>
+                    <td>{{team2}}</td>
+                    <td>{{start}}<br>{{remainingTime}}</td>
+                    <td>{{#if result}}{{result}}{{else}}n/a{{/if}}
+                      {{#if isFinals}}
+                        {{#if result_overtime}}
+                          <br>
+                          n.V. {{result_overtime}}
+                        {{/if}}
+                        {{#if result_eleven}}
+                          <br>
+                          n.E. {{result_eleven}}
+                        {{/if}}
                       {{/if}}
-                      {{#if result_eleven}}
-                        <br>
-                        n.E. {{result_eleven}}
-                      {{/if}}
+                    </td>
+                    {{#if currentUser}}
+                      <td>{{> myBet}}</td>
                     {{/if}}
-                  </td>
-                  {{#if currentUser}}
-                    <td>{{> myBet}}</td>
-                  {{/if}}
-                </tr>
-              {{/if}}
-            {{/each}}
-          </tbody>
-        </table>
-      {{/each}}
+                  </tr>
+                {{/if}}
+              {{/each}}
+            </tbody>
+          </table>
+        {{/each}}
+      {{else}}
+        <ol>
+          {{#each rankings}}
+            <li><strong>{{user}}</strong> mit <strong>{{points}}</strong> Punkten</li>
+          {{/each}}
+        </ol>
+      {{/unless}}
     </div>
   </div>
 </body>
@@ -81,9 +89,9 @@
 <template name="myBet">
   {{#unless currentBet}}
     {{#unless timeIsUp}}
-      <button class="btn btn-primary" data-toggle="modal" data-target="#{{_id}}">Tipp abgeben</button>
+      <button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#{{_id}}">Tipp abgeben</button>
     {{else}}
-      <h4>Zeit abgelaufen!</h4>
+      <strong>Zeit abgelaufen!</strong>
     {{/unless}}
   {{else}}
     {{#with currentBet}}
@@ -100,12 +108,12 @@
           {{/if}}
         {{/if}}
 
-        {{#unless timeIsUp ..}}
-          <button type="button" class="btn remove-bet">
+        {{#unless ../timeIsUp}}
+          <button type="button" class="btn btn-sm btn-danger remove-bet">
             <span class="glyphicon glyphicon-remove"></span>
           </button>
         {{else}}
-          <h4>{{myPoints ..}}</h4>
+          <strong>{{myPoints}}</strong>
         {{/unless}}
       </div>
     {{/with}}
