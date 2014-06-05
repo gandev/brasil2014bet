@@ -1,5 +1,6 @@
 <head>
   <title>brasil2014bet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
 <body>
@@ -21,7 +22,7 @@
                 <label>Benutzer:</label>
                 <input type="text" id="username"/>
                 <label>Passwort:</label>
-                <input type="text" id="password"/>
+                <input type="password" id="password"/>
                 <button class="btn btn-sm" id="loginUser">Login</button>
               {{/if}}
             </a></li>
@@ -78,7 +79,7 @@
       {{else}}
         <ol>
           {{#each rankings}}
-            <li><strong>{{user}}</strong> mit <strong>{{points}}</strong> Punkten</li>
+            <li><h1><strong>{{user}}</strong> mit <strong>{{points}}</strong> Punkten</h1></li>
           {{/each}}
         </ol>
       {{/unless}}
