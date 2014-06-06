@@ -45,6 +45,10 @@ if (Meteor.isClient) {
         return -ranking.points;
       });
       return rankings;
+    },
+    flagOfTeam: function(team) {
+      var team = this["team" + team];
+      return team;
     }
   });
 

@@ -52,8 +52,8 @@
               {{#each matchesByType}}
                 {{#if isFixed}}
                   <tr>
-                    <td>{{team1}}</td>
-                    <td>{{team2}}</td>
+                    <td><img src="flags/{{flagOfTeam 1}}.jpg" height="20"> {{team1}}</td>
+                    <td><img src="flags/{{flagOfTeam 2}}.jpg" height="20"> {{team2}}</td>
                     <td>{{start}}<br>{{remainingTime}}</td>
                     <td>{{#if result}}{{result}}{{else}}n/a{{/if}}
                       {{#if isFinals}}
