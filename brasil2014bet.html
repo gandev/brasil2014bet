@@ -30,32 +30,37 @@
         </div><!-- /.navbar-collapse -->
       </div>
     </nav>
-    <br><br><br>
-    <div class="container-fluid">
+
+    <div class="container-fluid match-plan">
       {{#unless rankingSiteActive}}
         {{#each matchTypes}}
-          <h4>{{this}}</h4>
+          <div class="match-types {{clazz}}">
+            <h4>{{text}}</h4>
 
-          <table class="table">
-            <thead>
-              <tr>
-                <th style="width: 15%;">Team 1</th>
-                <th style="width: 15%;">Team 2</th>
-                <th style="width: 20%;">Start</th>
-                <th style="width: 10%;">Ergebnis</th>
-                {{#if currentUser}}
-                  <th style="width: 40%;">Mein Tipp</th>
-                {{/if}}
-              </tr>
-            </thead>
-            <tbody>
-              {{#each matchesByType}}
-                {{#if isFixed}}
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width: 20%;">Team 1</th>
+                  <th style="width: 20%;">Team 2</th>
+                  <th style="width: 20%;">Start</th>
+                  <th style="width: 20%;">Ergebnis</th>
+                  {{#if currentUser}}
+                    <th style="width: 20%;">Mein Tipp</th>
+                  {{/if}}
+                </tr>
+              </thead>
+              <tbody>
+                {{#each matchesByType}}
                   <tr>
-                    <td><img src="flags/{{flagOfTeam 1}}.jpg" height="20"> {{team1}}</td>
-                    <td><img src="flags/{{flagOfTeam 2}}.jpg" height="20"> {{team2}}</td>
+                    <td>{{#if isFixed}}<img src="flags/{{flagOfTeam 1}}.jpg" height="20" width="30"> {{/if}}{{team1}}</td>
+                    <td>{{#if isFixed}}<img src="flags/{{flagOfTeam 2}}.jpg" height="20" width="30"> {{/if}}{{team2}}</td>
                     <td>{{start}}<br>{{remainingTime}}</td>
-                    <td>{{#if result}}{{result}}{{else}}n/a{{/if}}
+                    <td>
+                      {{#if result}}
+                        {{result}}
+                      {{else}}
+                        n/a
+                      {{/if}}
                       {{#if isFinals}}
                         {{#if result_overtime}}
                           <br>
@@ -68,20 +73,24 @@
                       {{/if}}
                     </td>
                     {{#if currentUser}}
-                      <td>{{> myBet}}</td>
+                      {{#if isFixed}}
+                        <td>{{> myBet}}</td>
+                      {{/if}}
                     {{/if}}
                   </tr>
-                {{/if}}
-              {{/each}}
-            </tbody>
-          </table>
+                {{/each}}
+              </tbody>
+            </table>
+          </div>
         {{/each}}
       {{else}}
-        <ol>
-          {{#each rankings}}
-            <li><h1><strong>{{user}}</strong> mit <strong>{{points}}</strong> Punkten</h1></li>
-          {{/each}}
-        </ol>
+        <div class="ranking">
+            {{#each rankings}}
+              <h1>
+                {{place}} <strong>{{user}}</strong> mit <strong> {{points}}</strong> Pkt.
+              </h1>
+            {{/each}}
+        </div>
       {{/unless}}
     </div>
   </div>

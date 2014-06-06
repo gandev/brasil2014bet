@@ -1,0 +1,70 @@
+.match-plan {
+  margin-top: 65px;
+}
+
+.ranking {
+  text-align: center;
+}
+
+.match-types {
+  font-family: "PT Sans";
+  border: 10px solid;
+  border-radius: 30px;
+
+  padding: 20px;
+  margin: 10px;
+}
+
+.group-a {
+  border-color: #CF8B8A;
+}
+
+.group-b {
+  border-color: #475276;
+}
+
+.group-c {
+  border-color: #8DADEF;
+}
+
+.group-d {
+  border-color: #E8C6CF;
+}
+
+.group-e {
+  border-color: #B0978C;
+}
+
+.group-f {
+  border-color: #7ACEEA;
+}
+
+.group-g {
+  border-color: #8FA6AE;
+}
+
+.group-h {
+  border-color: #C1E0EA;
+}
+
+.quarterfinals {
+  border-color: #385E6B;
+}
+
+.halffinals {
+  border-color: #528B9E;
+}
+
+.game-place3 {
+  border-color: #B4B37C;
+}
+
+.final {
+  border-color: #D7DF82;
+}
+
+/*
+  #F3F8A8;
+  #5B6423;
+  #5C5848;
+*/
