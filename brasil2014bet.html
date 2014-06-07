@@ -159,11 +159,13 @@
                         <td>{{> myBet}}</td>
                       {{else}}
                         <td>
-                          <div class="checkbox">
-                            <label>
-                              <input type="checkbox" class="set-match-fixed"> steht fest!
-                            </label>
-                          </div>
+                          {{#if userIsAdmin}}
+                            <div class="checkbox">
+                              <label>
+                                <input type="checkbox" class="set-match-fixed"> steht fest!
+                              </label>
+                            </div>
+                          {{/if}}
                         </td>
                       {{/if}}
                     {{/if}}
