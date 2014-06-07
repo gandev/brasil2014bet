@@ -1,3 +1,11 @@
+.live-edit-display {
+    cursor: pointer;
+    color: black;
+    text-decoration: none;
+}
+
+/**/
+
 .match-plan {
   margin-top: 55px;
 }

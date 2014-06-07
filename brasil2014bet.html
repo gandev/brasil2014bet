@@ -23,19 +23,21 @@
               <li class="{{#unless rankingSiteActive}}active{{/unless}}"><a id="betSiteNav" href="#">Tipps</a></li>
               <li class="{{rankingSiteActive}}"><a id="rankingSiteNav" href="#">Ranking</a></li>
 
-
-            {{#unless currentUser}}
-            <form class="navbar-form navbar-left" role="search">
-              <div class="form-group">
-                <input type="text" class="form-control" placeholder="Benutzername" id="username">
-                <input type="password" class="form-control" placeholder="Passwort" id="password">
-              </div>
-              <button class="btn btn-default" id="loginUser">Login</button>
-            </form>
-            {{else}}
-              <p class="navbar-text">{{> loginButtons}}</p>
-            {{/unless}}
-          </ul>
+              {{#if noCurrentUserOrAdmin}}
+                {{#if userIsAdmin}}
+                  <p class="navbar-text">{{> loginButtons}}</p>
+                {{/if}}
+                <form class="navbar-form navbar-left" role="search">
+                  <div class="form-group">
+                    <input type="text" class="form-control" placeholder="Benutzername" id="username">
+                    <input type="{{#if userIsAdmin}}text{{else}}password{{/if}}" class="form-control" placeholder="Passwort" id="password">
+                  </div>
+                  <button class="btn btn-default" id="loginUser">{{#if userIsAdmin}}Create{{else}}Login{{/if}}</button>
+                </form>
+              {{else}}
+                <p class="navbar-text">{{> loginButtons}}</p>
+              {{/if}}
+            </ul>
           </div><!-- /.navbar-collapse -->
         </div>
       </nav>
@@ -66,11 +68,22 @@
                     <td>{{#if isFixed}}<img src="flags/{{flagOfTeam 2}}.jpg" height="20" width="30"> {{/if}}{{team2}}</td>
                     <td>{{start}}<br>{{remainingTime}}</td>
                     <td>
-                      {{#if result}}
-                        {{result}}
-                      {{else}}
-                        n/a
-                      {{/if}}
+                      <div class="live-edit-result">
+                        {{#if editing}}
+                          <div class="live-edit-edit">
+                            <input class="live-edit-input" type="text" value="{{result}}" />
+                          </div>
+                        {{else}}
+                          <div class="live-edit-display">
+                            {{#if result}}
+                              {{result}}
+                            {{else}}
+                              n/a
+                            {{/if}}
+                          </div>
+                        {{/if}}
+                      </div>
+
                       {{#if isFinals}}
                         {{#if result_overtime}}
                           <br>
