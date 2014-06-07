@@ -46,10 +46,16 @@
     <div class="row match-plan">
       {{#unless rankingSiteActive}}
         {{#each matchTypes}}
-          <div class="match-types {{clazz}}">
-            <h3>{{text}}</h3>
+          <div class="panel panel-default match-type {{clazz}}">
+            <div class="panel-heading"><strong>{{text}}</strong></div>
 
-            <table class="table">
+            {{#if infoURL}}
+              <div class="panel-body">
+                <a href="{{infoURL}}" target="_blank">Infos zu den Mannschaften...</a>
+              </div>
+            {{/if}}
+
+            <table class="table table-striped table-condensed">
               <thead>
                 <tr>
                   <th style="width: 20%;">Team 1</th>
@@ -64,46 +70,108 @@
               <tbody>
                 {{#each matchesByType}}
                   <tr>
-                    <td>{{#if isFixed}}<img src="flags/{{flagOfTeam 1}}.jpg" height="20" width="30"> {{/if}}{{team1}}</td>
-                    <td>{{#if isFixed}}<img src="flags/{{flagOfTeam 2}}.jpg" height="20" width="30"> {{/if}}{{team2}}</td>
+                    <td>
+                      {{#if isFixed}}
+                        <img src="flags/{{flagOfTeam 1}}.jpg" height="20" width="30"> {{team1}}
+                      {{else}}
+                        {{team1}}
+                        {{#if userIsAdmin}}
+                          <select class="select-team1" id="team1-{{_id}}">
+                            {{#each allTeams}}
+                              <option value={{this}}>{{this}}</option>
+                            {{/each}}
+                          </select>
+                        {{/if}}
+                      {{/if}}
+                    </td>
+                    <td>
+                      {{#if isFixed}}
+                        <img src="flags/{{flagOfTeam 2}}.jpg" height="20" width="30"> {{team2}}
+                      {{else}}
+                        {{team2}}
+                        {{#if userIsAdmin}}
+                          <select class="select-team2" id="team2-{{_id}}">
+                            {{#each allTeams}}
+                              <option value={{this}}>{{this}}</option>
+                            {{/each}}
+                          </select>
+                        {{/if}}
+                      {{/if}}
+                    </td>
                     <td>{{start}}<br>{{remainingTime}}</td>
                     <td>
                       <div class="live-edit-result">
-                        {{#if editing}}
+                        {{#if editing_result}}
                           <div class="live-edit-edit">
-                            <input class="live-edit-input" type="text" value="{{result}}" />
+                            <input class="live-edit-result-input" type="text" value="{{result}}" />
                           </div>
                         {{else}}
                           <div class="live-edit-display">
                             {{#if result}}
-                              {{result}}
+                              <strong>{{result}}</strong>
                             {{else}}
-                              n/a
+                              <strong>n/a</strong>
                             {{/if}}
                           </div>
                         {{/if}}
                       </div>
 
                       {{#if isFinals}}
-                        {{#if result_overtime}}
-                          <br>
-                          n.V. {{result_overtime}}
+                        {{#if drawnResult result}}
+                          <div class="live-edit-result-overtime">
+                            {{#if editing_result_overtime}}
+                              <div class="live-edit-edit">
+                                n.V. <input class="live-edit-result-overtime-input" type="text" value="{{result_overtime}}" />
+                              </div>
+                            {{else}}
+                              <div class="live-edit-display">
+                                {{#if result_overtime}}
+                                  n.V. <strong>{{result_overtime}}</strong>
+                                {{else}}
+                                  n.V. <strong>n/a</strong>
+                                {{/if}}
+                              </div>
+                            {{/if}}
+                          </div>
                         {{/if}}
-                        {{#if result_eleven}}
-                          <br>
-                          n.E. {{result_eleven}}
+
+                        {{#if drawnResult result_overtime}}
+                          <div class="live-edit-result-eleven">
+                            {{#if editing_result_eleven}}
+                              <div class="live-edit-edit">
+                                n.E. <input class="live-edit-result-eleven-input" type="text" value="{{result_eleven}}" />
+                              </div>
+                            {{else}}
+                              <div class="live-edit-display">
+                                {{#if result_eleven}}
+                                  n.E. <strong>{{result_eleven}}</strong>
+                                {{else}}
+                                  n.E. <strong>n/a</strong>
+                                {{/if}}
+                              </div>
+                            {{/if}}
+                          </div>
                         {{/if}}
                       {{/if}}
                     </td>
                     {{#if currentUser}}
                       {{#if isFixed}}
                         <td>{{> myBet}}</td>
+                      {{else}}
+                        <td>
+                          <div class="checkbox">
+                            <label>
+                              <input type="checkbox" class="set-match-fixed"> steht fest!
+                            </label>
+                          </div>
+                        </td>
                       {{/if}}
                     {{/if}}
                   </tr>
                 {{/each}}
               </tbody>
             </table>
+
           </div>
         {{/each}}
       {{else}}
@@ -181,7 +249,9 @@
             <strong>:</strong>
             <input type="text" class="bet-team2-eleven" style="width: 20%;">
           {{/if}}
+        </div>
 
+        <div class="modal-footer">
           <button type="button" class="btn apply-bet">
             <span class="glyphicon glyphicon-ok"></span>
           </button>

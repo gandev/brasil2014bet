@@ -7,7 +7,7 @@
 /**/
 
 .match-plan {
-  margin-top: 55px;
+  margin-top: 60px;
 }
 
 .logged-in-user {
@@ -19,13 +19,13 @@
   text-align: center;
 }
 
-.match-types {
+.match-type {
   font-family: "PT Sans";
-  border: 8px solid;
-  border-radius: 30px;
+  border: 4px solid;
+  border-radius: 20px;
 
-  padding: 20px;
-  margin: 10px;
+  padding: 5px;
+  margin: 5px;
 }
 
 .group-a {
@@ -60,11 +60,15 @@
   border-color: #C1E0EA;
 }
 
+.second-round {
+  border-color: #F3F8A8;
+}
+
 .quarterfinals {
   border-color: #385E6B;
 }
 
-.halffinals {
+.semifinal {
   border-color: #528B9E;
 }
 
@@ -77,7 +81,7 @@
 }
 
 /*
-  #F3F8A8;
+
   #5B6423;
   #5C5848;
 */

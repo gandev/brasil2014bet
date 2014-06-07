@@ -2,39 +2,54 @@ Meteor.subscribe('userRankings');
 Meteor.subscribe('allMatches');
 Meteor.subscribe('myBets');
 
+var infoBaseURL =
+  'http://www.conti-online.com/generator/www/de/de/contisoccerworld/themes/01_background/30_fifa_2014/15_team_portraits/';
+
+var getInfoURL = function(url_part) {
+  return infoBaseURL + url_part;
+};
+
 var matchTypes = [{
   text: 'Gruppe A',
-  clazz: 'group-a'
+  clazz: 'group-a',
+  infoURL: getInfoURL('group_a_01.html')
 }, {
   text: 'Gruppe B',
-  clazz: 'group-b'
+  clazz: 'group-b',
+  infoURL: getInfoURL('group_b_01.html')
 }, {
   text: 'Gruppe C',
-  clazz: 'group-c'
+  clazz: 'group-c',
+  infoURL: getInfoURL('group_c_01.html')
 }, {
   text: 'Gruppe D',
-  clazz: 'group-d'
+  clazz: 'group-d',
+  infoURL: getInfoURL('group_d_01.html')
 }, {
   text: 'Gruppe E',
-  clazz: 'group-e'
+  clazz: 'group-e',
+  infoURL: getInfoURL('group_e_01.html')
 }, {
   text: 'Gruppe F',
-  clazz: 'group-f'
+  clazz: 'group-f',
+  infoURL: getInfoURL('group_f_01.html')
 }, {
   text: 'Gruppe G',
-  clazz: 'group-g'
+  clazz: 'group-g',
+  infoURL: getInfoURL('group_g_01.html')
 }, {
   text: 'Gruppe H',
-  clazz: 'group-h'
+  clazz: 'group-h',
+  infoURL: getInfoURL('group_h_01.html')
 }, {
   text: 'Achtelfinale',
-  clazz: 'group-a'
+  clazz: 'second-round'
 }, {
   text: 'Viertelfinale',
   clazz: 'quarterfinals'
 }, {
   text: 'Halbfinale',
-  clazz: 'halffinals'
+  clazz: 'semifinal'
 }, {
   text: 'Spiel um Platz 3',
   clazz: 'game-place3'
@@ -43,12 +58,25 @@ var matchTypes = [{
   clazz: 'final'
 }];
 
-var isAdmin = function () {
+var isAdmin = function() {
   var user = Meteor.user();
   return user && user.profile && user.profile.isAdmin;
 };
 
 UI.body.helpers({
+  allTeams: function () {
+    var matches = Matches.find().fetch();
+    matches = _.filter(matches, function (match) {
+      if(match.type.indexOf('Gruppe') >= 0) {
+        return true;
+      }
+    });
+
+    var teams = _.map(matches, function (match) {
+      return match.team1;
+    });
+    return _.uniq(teams);
+  },
   matchTypes: function() {
     return matchTypes;
   },
@@ -81,6 +109,12 @@ UI.body.helpers({
 
     return rankings;
   },
+  drawnResult: function (result) {
+    var result_split = result && result.split(':');
+    if(result_split && result_split.length === 2 && result_split[0] === result_split[1]) {
+      return true;
+    }
+  },
   flagOfTeam: function(team) {
     team = this["team" + team];
     _.each(['ü', 'ä', 'ö'], function(umlaut, index) {
@@ -98,10 +132,10 @@ UI.body.helpers({
     });
     return team;
   },
-  noCurrentUserOrAdmin: function () {
+  noCurrentUserOrAdmin: function() {
     var user = Meteor.user();
-    if(user) {
-      if(isAdmin()) {
+    if (user) {
+      if (isAdmin()) {
         return true;
       } else {
         return false;
@@ -110,11 +144,17 @@ UI.body.helpers({
       return true;
     }
   },
-  userIsAdmin: function () {
+  userIsAdmin: function() {
     return isAdmin();
   },
-  editing: function() {
+  editing_result: function() {
     return Session.equals('editing_result', this._id);
+  },
+  editing_result_overtime: function() {
+    return Session.equals('editing_result_overtime', this._id);
+  },
+  editing_result_eleven: function() {
+    return Session.equals('editing_result_eleven', this._id);
   }
 });
 
@@ -128,18 +168,18 @@ UI.body.events({
     var username = user_input.val();
     var password = pw_input.val();
 
-    if(Meteor.userId()) {
+    if (Meteor.userId()) {
       Meteor.call("createNewUser", username, password, function(err, result) {
         console.log(err, result);
 
-        if(!err) {
+        if (!err) {
           user_input.val('');
           pw_input.val('');
         }
       });
     } else {
-      Meteor.loginWithPassword(username, password, function (err) {
-        if(!err) {
+      Meteor.loginWithPassword(username, password, function(err) {
+        if (!err) {
           user_input.val('');
           pw_input.val('');
         }
@@ -152,17 +192,47 @@ UI.body.events({
   'click #rankingSiteNav': function(evt, tmpl) {
     Session.set('rankingSiteActive', true);
   },
+  'click .set-match-fixed': function(evt, tmpl) {
+    var team1 = tmpl.$('#team1-' + this._id).val();
+    var team2 = tmpl.$('#team2-' + this._id).val();
+
+    if(team1 && team2 && team1 !== team2) {
+      Matches.update(this._id, {
+        '$set': {
+          isFixed: true,
+          team1: team1,
+          team2: team2
+        }
+      });
+    } else {
+      tmpl.$(evt.target).prop('checked', false);
+    }
+  },
   'dblclick .live-edit-result': function(evt, tmpl) {
-    if(isAdmin()) {
+    if (isAdmin()) {
       Session.set('editing_result', this._id);
       Deps.flush(); // force DOM redraw, so we can focus the edit field
-      activateInput(tmpl.find(".live-edit-input"));
+      activateInput(tmpl.find(".live-edit-result-input"));
+    }
+  },
+  'dblclick .live-edit-result-overtime': function(evt, tmpl) {
+    if (isAdmin()) {
+      Session.set('editing_result_overtime', this._id);
+      Deps.flush(); // force DOM redraw, so we can focus the edit field
+      activateInput(tmpl.find(".live-edit-result-overtime-input"));
+    }
+  },
+  'dblclick .live-edit-result-eleven': function(evt, tmpl) {
+    if (isAdmin()) {
+      Session.set('editing_result_eleven', this._id);
+      Deps.flush(); // force DOM redraw, so we can focus the edit field
+      activateInput(tmpl.find(".live-edit-result-eleven-input"));
     }
   }
 });
 
 UI.body.events(okCancelEvents(
-  '.live-edit-input', {
+  '.live-edit-result-input', {
     ok: function(value) {
       Matches.update(this._id, {
         $set: {
@@ -173,6 +243,36 @@ UI.body.events(okCancelEvents(
     },
     cancel: function() {
       Session.set('editing_result', null);
+    }
+  }));
+
+UI.body.events(okCancelEvents(
+  '.live-edit-result-overtime-input', {
+    ok: function(value) {
+      Matches.update(this._id, {
+        $set: {
+          result_overtime: value
+        }
+      });
+      Session.set('editing_result_overtime', null);
+    },
+    cancel: function() {
+      Session.set('editing_result_overtime', null);
+    }
+  }));
+
+UI.body.events(okCancelEvents(
+  '.live-edit-result-eleven-input', {
+    ok: function(value) {
+      Matches.update(this._id, {
+        $set: {
+          result_eleven: value
+        }
+      });
+      Session.set('editing_result_eleven', null);
+    },
+    cancel: function() {
+      Session.set('editing_result_eleven', null);
     }
   }));
 

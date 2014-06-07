@@ -175,29 +175,61 @@ Meteor.startup(function() {
 Meteor.methods({
   applyBet: function(match, b1, b2, b1_overtime, b2_overtime, b1_eleven,
     b2_eleven) {
-    if (this.userId && !timeIsUp(match.start)) {
+
+    b1 = parseInt(b1, 10);
+    b2 = parseInt(b2, 10);
+    b1_overtime = parseInt(b1_overtime, 10);
+    b2_overtime = parseInt(b2_overtime, 10);
+    b1_eleven = parseInt(b1_eleven, 10);
+    b2_eleven = parseInt(b2_eleven, 10);
+
+    var result;
+    var result_overtime;
+    var result_eleven;
+
+    if(!isNaN(b1) && !isNaN(b2)) {
+      result = b1 + ':' + b2;
+    }
+
+    var noResultOvertime = false;
+    if(!isNaN(b1_overtime) && !isNaN(b2_overtime) && result && b1 === b2) {
+      result_overtime = b1_overtime + ':' + b2_overtime;
+    } else if(result && b1 === b2) {
+      result_overtime = result;
+      noResultOvertime = true;
+    }
+
+    if(!isNaN(b1_eleven) && !isNaN(b2_eleven) && result_overtime && (b1_overtime === b2_overtime || noResultOvertime)) {
+      result_eleven = b1_eleven + ':' + b2_eleven;
+    } else if(result_overtime && noResultOvertime) {
+      result_eleven = result_overtime;
+    }
+
+    if (this.userId && result && !timeIsUp(match.start)) {
       Bets.upsert({
         match: match._id,
         user: this.userId
       }, {
         match: match._id,
         user: this.userId,
-        result: b1 + ':' + b2,
-        result_overtime: (b1_overtime && b2_overtime && b1 === b2 ?
-          b1_overtime + ':' + b2_overtime : null),
-        result_eleven: (b1_eleven && b2_eleven && b1_overtime ===
-          b2_overtime ? b1_eleven + ':' + b2_eleven : null)
+        result: result,
+        result_overtime: result_overtime,
+        result_eleven: result_eleven
       });
       return true;
+    } else if(!this.userId) {
+      throw new Meteor.Error(999, 'NO! Need user logged in!');
+    } else if(!result) {
+      throw new Meteor.Error(998, 'NO! Need valid result!');
     } else {
-      throw new Meteor.Error(999, 'NO! Time is up!');
+      throw new Meteor.Error(997, 'NO! Time is up!');
     }
   },
   createNewUser: function (user, pw, admin) {
     if(isAdmin(this.userId)) {
       Accounts.createUser({username: user, password: pw, profile: {isAdmin: admin}});
     } else {
-      throw new Meteor.Error(998, 'NO! Only Admin!');
+      throw new Meteor.Error(996, 'NO! Only Admin!');
     }
   }
 });
