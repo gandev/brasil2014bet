@@ -10,9 +10,16 @@
 
 */
 
-Rankings = new Meteor.Collection('rankings');
-Matches = new Meteor.Collection('matches');
+var infoBaseURL = 'http://www.conti-online.com/generator/www/de/de/contisoccerworld/themes/01_background/30_fifa_2014/15_team_portraits/';
+
+Matches = new Meteor.Collection('matches', {
+  transform: function (match) {
+    match.infoURL = infoBaseURL + 'group_a_01.html';
+    return match;
+  }
+});
 Bets = new Meteor.Collection('bets');
+Rankings = new Meteor.Collection('rankings');
 
 if (Meteor.isClient) {
   Meteor.subscribe('userRankings');
@@ -114,6 +121,16 @@ if (Meteor.isClient) {
 
   UI.body.events({
     'click #loginUser': function(evt, tmpl) {
+      evt.preventDefault();
+
+      console.log(Meteor.users.findOne());
+
+      /*
+      Meteor.call("createNewUser", 'hv', 'default', function(err, result) {
+          console.log(err, result);
+        });
+      */
+
       var username = tmpl.$('#username').val();
       var password = tmpl.$('#password').val();
 
@@ -162,6 +179,10 @@ if (Meteor.isClient) {
 }
 
 if (Meteor.isServer) {
+  Accounts.config({
+    forbidClientAccountCreation: true
+  });
+
   Meteor.publish('myBets', function() {
     return Bets.find({
       user: this.userId
@@ -222,8 +243,27 @@ if (Meteor.isServer) {
   });
 
   Bets.allow({
-    remove: function(userId, doc) {
-      return doc.user === userId;
+    remove: function(userId, bet) {
+      return bet.user === userId;
+    }
+  });
+
+  var isAdmin = function (userId) {
+    var user = Meteor.users.findOne(userId);
+    if(user && user.profile && user.profile.isAdmin) {
+      return true;
+    }
+  };
+
+  Matches.allow({
+    update: function (userId) {
+      return isAdmin(userId);
+    }
+  });
+
+  Meteor.users.deny({
+    update: function (userId, docs, fields) {
+      return _.contains(fields, 'isAdmin');
     }
   });
 
@@ -331,12 +371,20 @@ if (Meteor.isServer) {
       } else {
         throw new Meteor.Error(999, 'NO! Time is up!');
       }
+    },
+    createNewUser: function (user, pw, admin) {
+      if(isAdmin(this.userId)) {
+        Accounts.createUser({username: user, password: pw, profile: {isAdmin: admin}});
+      } else {
+        throw new Meteor.Error(998, 'NO! Only Admin!');
+      }
     }
   });
 
   Meteor.startup(function() {
 
     if (Matches.find().count() === 0) {
+      Accounts.createUser({username: 'ag', password: 'default', profile: {isAdmin: true}});
 
       //GRUPPE A
       Matches.insert({

@@ -1,5 +1,10 @@
 .match-plan {
-  margin-top: 65px;
+  margin-top: 55px;
+}
+
+.logged-in-user {
+  margin-top: 15px;
+  font-size: 16px;
 }
 
 .ranking {
@@ -8,7 +13,7 @@
 
 .match-types {
   font-family: "PT Sans";
-  border: 10px solid;
+  border: 8px solid;
   border-radius: 30px;
 
   padding: 20px;
