@@ -263,7 +263,7 @@ if (Meteor.isServer) {
 
   Meteor.users.deny({
     update: function (userId, docs, fields) {
-      return _.contains(fields, 'isAdmin');
+      return true; //TODO only isAdmin field in profile
     }
   });
 
