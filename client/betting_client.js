@@ -64,15 +64,15 @@ var isAdmin = function() {
 };
 
 UI.body.helpers({
-  allTeams: function () {
+  allTeams: function() {
     var matches = Matches.find().fetch();
-    matches = _.filter(matches, function (match) {
-      if(match.type.indexOf('Gruppe') >= 0) {
+    matches = _.filter(matches, function(match) {
+      if (!match.isFinals) {
         return true;
       }
     });
 
-    var teams = _.map(matches, function (match) {
+    var teams = _.map(matches, function(match) {
       return match.team1;
     });
     return _.uniq(teams);
@@ -83,6 +83,10 @@ UI.body.helpers({
   matchesByType: function() {
     return Matches.find({
       type: this.text.toString()
+    }, {
+      sort: {
+        remainingTime: 1
+      }
     });
   },
   rankingSiteActive: function() {
@@ -109,10 +113,30 @@ UI.body.helpers({
 
     return rankings;
   },
-  drawnResult: function (result) {
+  drawnResult: function(result) {
     var result_split = result && result.split(':');
-    if(result_split && result_split.length === 2 && result_split[0] === result_split[1]) {
+    if (result_split && result_split.length === 2 && result_split[0] ===
+      result_split[1]) {
       return true;
+    }
+  },
+  remainingTimeFromNow: function() {
+    return moment.duration(this.remainingTime, 'milliseconds').humanize(true);
+  },
+  remaingTimeClass: function() {
+    var start = parseStartTime(this.start);
+    start.subtract('days', 1);
+    if (moment().isAfter(start) && !this.result) {
+      return 'danger';
+    }
+
+    start.subtract('days', 2);
+    if (moment().isAfter(start) && !this.result) {
+      return 'warning';
+    } else if (this.result) {
+      return 'success';
+    } else {
+      return 'default';
     }
   },
   flagOfTeam: function(team) {
@@ -170,11 +194,11 @@ UI.body.events({
 
     if (Meteor.userId()) {
       Meteor.call("createNewUser", username, password, function(err, result) {
-        console.log(err, result);
-
         if (!err) {
           user_input.val('');
           pw_input.val('');
+        } else {
+          console.log(err);
         }
       });
     } else {
@@ -196,7 +220,7 @@ UI.body.events({
     var team1 = tmpl.$('#team1-' + this._id).val();
     var team2 = tmpl.$('#team2-' + this._id).val();
 
-    if(team1 && team2 && team1 !== team2) {
+    if (team1 && team2 && team1 !== team2) {
       Matches.update(this._id, {
         '$set': {
           isFixed: true,
@@ -236,7 +260,9 @@ UI.body.events(okCancelEvents(
     ok: function(value) {
       Matches.update(this._id, {
         $set: {
-          result: value
+          result: value,
+          result_overtime: null,
+          result_eleven: null
         }
       });
       Session.set('editing_result', null);
@@ -251,7 +277,8 @@ UI.body.events(okCancelEvents(
     ok: function(value) {
       Matches.update(this._id, {
         $set: {
-          result_overtime: value
+          result_overtime: value,
+          result_eleven: null
         }
       });
       Session.set('editing_result_overtime', null);
@@ -283,8 +310,8 @@ Template.myBet.helpers({
     });
   },
   myPoints: function() {
-    return '[' + (isNaN(this.points) ? 'Ergebnis fehlt!' : '' + this.points) +
-      ' Punkt(e)]';
+    return '[' + (_.isNaN(this.points) ? 'Ergebnis fehlt!' : '' + this.points +
+      ' Punkt(e)') + ']';
   }
 });
 
@@ -301,7 +328,7 @@ Template.myBet.events({
 
     Meteor.call('applyBet', this, b1, b2, b1_overtime, b2_overtime,
       b1_eleven, b2_eleven, function(err, result) {
-        console.log(err, result);
+        console.log(err);
       });
   },
   'click .remove-bet': function(evt, tmpl) {

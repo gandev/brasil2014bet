@@ -9,9 +9,7 @@ Meteor.publish('myBets', function() {
 });
 
 Meteor.publish('allMatches', function() {
-  return Matches.find({}, {
-    sort: {start: 1}
-  });
+  return Matches.find({});
 });
 
 Meteor.publish('userRankings', function() {
@@ -20,7 +18,7 @@ Meteor.publish('userRankings', function() {
   var initializing = true;
   var handle = Bets.find().observe({
     added: function(bet) {
-      if (isNaN(pointsByUser[bet.user])) {
+      if (_.isNaN(pointsByUser[bet.user])) {
         pointsByUser[bet.user] = 0;
         if (!initializing) {
           self.added('rankings', bet.user, {
@@ -30,16 +28,17 @@ Meteor.publish('userRankings', function() {
         }
       }
 
-      if (!isNaN(bet.points)) {
+      if (!_.isNaN(bet.points)) {
         pointsByUser[bet.user] = pointsByUser[bet.user] + bet.points;
       }
     },
     changed: function(newBet, oldBet) {
-      var oldPoints = isNaN(oldBet.points) ? 0 : oldBet.points;
-      var newPoints = isNaN(newBet.points) ? 0 : newBet.points;
+      var oldPoints = _.isNaN(oldBet.points) ? 0 : oldBet.points;
+      var newPoints = _.isNaN(newBet.points) ? 0 : newBet.points;
 
       var points = (pointsByUser[newBet.user] - oldPoints) + newPoints;
       pointsByUser[newBet.user] = points;
+
       self.changed('rankings', newBet.user, {
         points: points
       });
@@ -69,28 +68,24 @@ Bets.allow({
   }
 });
 
-var isAdmin = function (userId) {
+var isAdmin = function(userId) {
   var user = Meteor.users.findOne(userId);
-  if(user && user.profile && user.profile.isAdmin) {
+  if (user && user.profile && user.profile.isAdmin) {
     return true;
   }
 };
 
 Matches.allow({
-  update: function (userId) {
+  update: function(userId) {
     return isAdmin(userId);
   }
 });
 
 Meteor.users.deny({
-  update: function (userId, docs, fields) {
+  update: function(userId, docs, fields) {
     return true; //TODO only isAdmin field in profile
   }
 });
-
-var parseStartTime = function(match_time) {
-  return moment(match_time, 'DD.MM.YYYY  HH:mm');
-};
 
 var timeIsUp = function(match_time) {
   var m = parseStartTime(match_time);
@@ -121,52 +116,61 @@ var calculatePoints = function(result, bet) {
   }
 };
 
+var updateMatchTime = function(match) {
+  Matches.update(match._id, {
+    '$set': {
+      timeIsUp: timeIsUp(match.start),
+      remainingTime: parseStartTime(match.start).valueOf() - moment().valueOf()
+    }
+  });
+};
+
 Meteor.startup(function() {
   Meteor.setInterval(function() {
     var matches = Matches.find().fetch();
 
     _.each(matches, function(match) {
-      Matches.update(match._id, {
-        '$set': {
-          timeIsUp: timeIsUp(match.start),
-          remainingTime: '(' + parseStartTime(match.start).fromNow() +
-            ')'
-        }
-      });
+      updateMatchTime(match);
     });
-  }, 2000); //TODO increase time!?
+  }, 120 * 1000); //update remaining time for all matches
 
   Matches.find().observe({
-    changed: function(newMatch, oldMatch) {
-      if (newMatch.result) {
-        var betsByMatch = Bets.find({
-          match: newMatch._id
-        }).fetch();
+    changed: function(match) {
+      var betsByMatch = Bets.find({
+        match: match._id
+      }).fetch();
 
-        _.each(betsByMatch, function(bet) {
-          var points;
+      _.each(betsByMatch, function(bet) {
+        var points;
 
-          if (newMatch.result && bet.result) {
-            points = 0;
-            points += calculatePoints(newMatch.result, bet.result);
+        if (match.result && bet.result) {
+          points = 0;
+          points += calculatePoints(match.result, bet.result);
+        }
+
+        if (match.result_overtime && bet.result_overtime &&
+          points !== undefined) {
+          points += calculatePoints(match.result_overtime, bet.result_overtime);
+        }
+
+        if (match.result_eleven && bet.result_eleven &&
+          points !== undefined) {
+          points += calculatePoints(match.result_eleven, bet.result_eleven);
+        }
+
+        Bets.update(bet._id, {
+          '$set': {
+            points: points
           }
-
-          if (newMatch.result_overtime && bet.result_overtime && points !==
-            undefined) {
-            points += calculatePoints(newMatch.result_overtime, bet.result_overtime);
-          }
-
-          if (newMatch.result_eleven && bet.result_eleven && points !==
-            undefined) {
-            points += calculatePoints(newMatch.result_eleven, bet.result_eleven);
-          }
-
-          Bets.update(bet._id, {
-            '$set': {
-              points: points
-            }
-          });
         });
+      });
+    }
+  });
+
+  Matches.find().observeChanges({
+    changed: function(id, fields) {
+      if (_.has(fields, 'start')) {
+        updateMatchTime(Matches.findOne(id));
       }
     }
   });
@@ -187,21 +191,23 @@ Meteor.methods({
     var result_overtime;
     var result_eleven;
 
-    if(!isNaN(b1) && !isNaN(b2)) {
+    if (!isNaN(b1) && !isNaN(b2)) {
       result = b1 + ':' + b2;
     }
 
     var noResultOvertime = false;
-    if(!isNaN(b1_overtime) && !isNaN(b2_overtime) && result && b1 === b2) {
+    if (!isNaN(b1_overtime) && !isNaN(b2_overtime) && result && b1 === b2) {
       result_overtime = b1_overtime + ':' + b2_overtime;
-    } else if(result && b1 === b2) {
+    } else if (result && b1 === b2) {
       result_overtime = result;
       noResultOvertime = true;
     }
 
-    if(!isNaN(b1_eleven) && !isNaN(b2_eleven) && result_overtime && (b1_overtime === b2_overtime || noResultOvertime)) {
+    if (!isNaN(b1_eleven) && !isNaN(b2_eleven) && result_overtime && (
+      b1_overtime === b2_overtime || noResultOvertime)) {
       result_eleven = b1_eleven + ':' + b2_eleven;
-    } else if(result_overtime && noResultOvertime) {
+    } else if (result_overtime && (
+      b1_overtime === b2_overtime || noResultOvertime)) {
       result_eleven = result_overtime;
     }
 
@@ -217,17 +223,24 @@ Meteor.methods({
         result_eleven: result_eleven
       });
       return true;
-    } else if(!this.userId) {
+    } else if (!this.userId) {
       throw new Meteor.Error(999, 'NO! Need user logged in!');
-    } else if(!result) {
+    } else if (!result) {
       throw new Meteor.Error(998, 'NO! Need valid result!');
     } else {
+      updateMatchTime(match);
       throw new Meteor.Error(997, 'NO! Time is up!');
     }
   },
-  createNewUser: function (user, pw, admin) {
-    if(isAdmin(this.userId)) {
-      Accounts.createUser({username: user, password: pw, profile: {isAdmin: admin}});
+  createNewUser: function(user, pw, admin) {
+    if (isAdmin(this.userId)) {
+      Accounts.createUser({
+        username: user,
+        password: pw,
+        profile: {
+          isAdmin: admin
+        }
+      });
     } else {
       throw new Meteor.Error(996, 'NO! Only Admin!');
     }
@@ -240,7 +253,13 @@ Meteor.methods({
 Meteor.startup(function() {
 
   if (Matches.find().count() === 0) {
-    Accounts.createUser({username: 'ag', password: 'default', profile: {isAdmin: true}});
+    Accounts.createUser({
+      username: 'ag',
+      password: 'default',
+      profile: {
+        isAdmin: true
+      }
+    });
 
     //GRUPPE A
     Matches.insert({

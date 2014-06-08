@@ -98,7 +98,12 @@
                         {{/if}}
                       {{/if}}
                     </td>
-                    <td>{{start}}<br>{{remainingTime}}</td>
+                    <td>
+                      {{start}}<br>
+                      <span class="label label-{{remaingTimeClass}}">
+                        {{remainingTimeFromNow}}
+                      </span>
+                    </td>
                     <td>
                       <div class="live-edit-result">
                         {{#if editing_result}}
@@ -199,15 +204,15 @@
   {{else}}
     {{#with currentBet}}
       <div>
-        {{result}}
+        <strong>{{result}}</strong>
         {{#if ../isFinals}}
           {{#if result_overtime}}
             <br>
-            n.V. {{result_overtime}}
+            <strong>n.V. {{result_overtime}}</strong>
           {{/if}}
           {{#if result_eleven}}
             <br>
-            n.E. {{result_eleven}}
+            <strong>n.E. {{result_eleven}}</strong>
           {{/if}}
         {{/if}}
 
