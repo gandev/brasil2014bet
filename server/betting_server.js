@@ -18,7 +18,7 @@ Meteor.publish('userRankings', function() {
   var initializing = true;
   var handle = Bets.find().observe({
     added: function(bet) {
-      if (_.isNaN(pointsByUser[bet.user])) {
+      if (pointsByUser[bet.user] === undefined) {
         pointsByUser[bet.user] = 0;
         if (!initializing) {
           self.added('rankings', bet.user, {
@@ -28,13 +28,13 @@ Meteor.publish('userRankings', function() {
         }
       }
 
-      if (!_.isNaN(bet.points)) {
+      if (_.isNumber(bet.points)) {
         pointsByUser[bet.user] = pointsByUser[bet.user] + bet.points;
       }
     },
     changed: function(newBet, oldBet) {
-      var oldPoints = _.isNaN(oldBet.points) ? 0 : oldBet.points;
-      var newPoints = _.isNaN(newBet.points) ? 0 : newBet.points;
+      var oldPoints = _.isNumber(oldBet.points) ? oldBet.points: 0;
+      var newPoints = _.isNumber(newBet.points) ? newBet.points: 0;
 
       var points = (pointsByUser[newBet.user] - oldPoints) + newPoints;
       pointsByUser[newBet.user] = points;

@@ -310,7 +310,7 @@ Template.myBet.helpers({
     });
   },
   myPoints: function() {
-    return '[' + (_.isNaN(this.points) ? 'Ergebnis fehlt!' : '' + this.points +
+    return '[' + (!_.isNumber(this.points) ? 'Ergebnis fehlt!' : '' + this.points +
       ' Punkt(e)') + ']';
   }
 });
